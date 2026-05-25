@@ -7,13 +7,17 @@ ENV TRANSFORMERS_CACHE=/app/hf_cache
 
 WORKDIR /app
 
-# System deps for audio I/O and git clone
+# System deps:
+#   git, wget, ca-certificates  — fetch upstream + models
+#   ffmpeg, libsndfile1          — audio I/O
+#   build-essential              — gcc + headers for any pip package with C extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ffmpeg \
     libsndfile1 \
     wget \
     ca-certificates \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone Seed-VC at pinned commit
