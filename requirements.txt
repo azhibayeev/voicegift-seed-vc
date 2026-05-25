@@ -17,6 +17,7 @@ soundfile==0.12.1
 scipy==1.13.1
 numpy==1.26.4
 pydub==0.25.1
+descript-audio-codec==1.0.0
 
 # Config / utils
 pyyaml==6.0.2
