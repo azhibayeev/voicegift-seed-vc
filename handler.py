@@ -57,7 +57,7 @@ def handler(event):
     inference_cfg_rate = float(inp.get("inference_cfg_rate", 0.7))
     f0_condition = bool(inp.get("f0_condition", True))  # True = singing mode
     auto_f0_adjust = bool(inp.get("auto_f0_adjust", False))
-    semi_tone_shift = int(inp.get("semi_tone_shift", 0))
+    pitch_shift = int(inp.get("pitch_shift", inp.get("semi_tone_shift", 0)))
 
     source_path = None
     reference_path = None
@@ -67,16 +67,24 @@ def handler(event):
         reference_path = _download(reference_url, ".wav")
 
         print(f"[handler] running inference src={source_url} ref={reference_url}", flush=True)
-        audio, sr = wrapper.convert_voice(
-            source_audio_path=source_path,
-            target_audio_path=reference_path,
+        # convert_voice() actual signature (from seed_vc_wrapper.py at pinned SHA):
+        #   convert_voice(source, target, diffusion_steps, length_adjust,
+        #                 inference_cfg_rate, f0_condition, auto_f0_adjust,
+        #                 pitch_shift, stream_output)
+        # With stream_output=False it returns the full audio numpy array
+        # (sample rate is implied: 22050 if f0_condition=False, 44100 if True).
+        audio = wrapper.convert_voice(
+            source=source_path,
+            target=reference_path,
             diffusion_steps=diffusion_steps,
             length_adjust=length_adjust,
             inference_cfg_rate=inference_cfg_rate,
             f0_condition=f0_condition,
             auto_f0_adjust=auto_f0_adjust,
-            semi_tone_shift=semi_tone_shift,
+            pitch_shift=pitch_shift,
+            stream_output=False,
         )
+        sr = 44100 if f0_condition else 22050
 
         out_fd, out_path = tempfile.mkstemp(suffix=".wav")
         os.close(out_fd)
