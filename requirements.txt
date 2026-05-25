@@ -1,0 +1,23 @@
+# Pinned for reproducibility; matches Seed-VC's conda env (cuda 12.1)
+torch==2.4.0
+torchaudio==2.4.0
+torchvision==0.19.0
+
+# Core ML deps
+transformers==4.46.3
+huggingface-hub>=0.28.1
+einops==0.8.0
+hydra-core==1.3.2
+omegaconf==2.3.0
+munch==4.0.0
+
+# Audio
+librosa==0.10.2
+soundfile==0.12.1
+scipy==1.13.1
+numpy==1.26.4
+pydub==0.25.1
+
+# Serverless
+runpod>=1.7.0
+requests==2.32.3
