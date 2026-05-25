@@ -67,13 +67,12 @@ def handler(event):
         reference_path = _download(reference_url, ".wav")
 
         print(f"[handler] running inference src={source_url} ref={reference_url}", flush=True)
-        # convert_voice() actual signature (from seed_vc_wrapper.py at pinned SHA):
-        #   convert_voice(source, target, diffusion_steps, length_adjust,
-        #                 inference_cfg_rate, f0_condition, auto_f0_adjust,
-        #                 pitch_shift, stream_output)
-        # With stream_output=False it returns the full audio numpy array
-        # (sample rate is implied: 22050 if f0_condition=False, 44100 if True).
-        audio = wrapper.convert_voice(
+        # convert_voice() is a generator function (contains `yield`). Even with
+        # stream_output=False, calling it returns a generator object, not the
+        # audio array. The final audio is the StopIteration .value when the
+        # generator exits via `return full_audio`. We drain the generator and
+        # capture that value.
+        gen = wrapper.convert_voice(
             source=source_path,
             target=reference_path,
             diffusion_steps=diffusion_steps,
@@ -84,7 +83,20 @@ def handler(event):
             pitch_shift=pitch_shift,
             stream_output=False,
         )
+        audio = None
+        try:
+            while True:
+                next(gen)  # no yields will fire when stream_output=False, but be defensive
+        except StopIteration as stop:
+            audio = stop.value
+        if audio is None:
+            raise RuntimeError("convert_voice generator exhausted without producing audio")
+        # Sample rate is implied: 22050 for speech, 44100 for f0/singing model
         sr = 44100 if f0_condition else 22050
+        # soundfile.write needs 2D (frames, channels) on some versions — coerce
+        import numpy as np
+        if hasattr(audio, "ndim") and audio.ndim == 1:
+            audio = audio.reshape(-1, 1)
 
         out_fd, out_path = tempfile.mkstemp(suffix=".wav")
         os.close(out_fd)
